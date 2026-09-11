@@ -1,107 +1,167 @@
 # Tabthrough
 
-**Understand every change, one Tab at a time.**
+Understand a code change one Tab at a time. Tabthrough is a guided diff reader for VS Code and Cursor: it walks your working changes, a commit, or a commit range in explanation order — types before callers, not the file list git gives you. It works offline, needs no account, and does not find bugs or write review comments.
 
-Tabthrough turns local changes, a commit, or a commit range into an ordered walkthrough in VS Code and Cursor. Reveal the code one step at a time while the sidebar keeps the author's explanation in view. It works offline, without an account or API key.
-
-The **Walkthrough sidebar** shows progress, the guide summary, each step's reason and full notes, and navigation and completion controls. Open it from the activity bar or **Tabthrough: Show Walkthrough**. The final step stays visible until you finish.
-
-### Install and try
-
-Build and sideload this release candidate:
-
-```bash
-pnpm install --frozen-lockfile
-pnpm build
-# Node 24 is required for the packaging toolchain.
-# If you use mise: mise exec node@24 -- pnpm ext:package
-pnpm ext:package
-code --install-extension tabthrough-0.0.0.vsix
-# Cursor users: pnpm ext:install
-```
-
-For a small, disposable example with authored notes:
-
-```bash
-node scripts/create-demo.mjs
-```
-
-Open the printed folder in your editor, run **Tabthrough: Review Working Changes**, generate or start the walkthrough, and press **Tab**. The demo walks from an order type to its calculation and caller. The script creates a new temporary repository each time; it does not change your project.
-
-## Why ordinary diffs are hard
-
-Git sorts by path. Explanation order is different: types before callers, schema before migration, the fix before the test that proves it. Skimming the file list is fast; finishing with a mental model is not. Tabthrough is a **guided diff reader** — it sequences the source so you form the explanation yourself. It does not find bugs, post review comments, or replace PR tools.
-
-## Walk a change
-
-1. Open the sidebar and choose working changes, a commit, or a commit range.
-2. Generate a Simple or Agent guide, or start from a sidecar already on disk. Dirty file buffers are saved before a working-tree snapshot; a failed save stops the review. The sidebar shows **Will run: nothing** — read-only does not check out or stash.
-3. Read each explanation and press **Tab** (or use the sidebar) to reveal the next step.
-
-| Mode | What it does | Landed |
-|------|----------------|--------|
-| Read-only | Virtual documents. Working changes get a snapshot ref; commit and range touch nothing. **Edit here** opens the real file for a working-tree review. | Yes |
-| Rebase | Interactive rebase stopped at the reviewed commit. **Edit here** opens the real file. Finish amends and `--continue`; Cancel is `--abort`. | Yes |
-| Worktree | Detached worktree in a new window | Later |
-
-Alt+] and Alt+[ always advance. Ordinary Tab still indents in real file editors. Turn off `tabthrough.keybinding.useTab` to use only the alternate shortcuts. **Alt+Enter** is Edit here while a review document is focused.
-
-Tabthrough never creates a commit for you.
-
-## What you can review
-
-| Command | Target |
-|---------|--------|
-| **Tabthrough: Review Working Changes** | Staged + unstaged + untracked (ignored files stay ignored) |
-| **Tabthrough: Review a Commit…** | One commit vs its parent (pick from recent history or type a ref) |
-| **Tabthrough: Review a Commit Range…** | `main..HEAD` style ranges, resolved through the merge base |
-
-Native one-click GitHub/GitLab PR entry is planned; today you review the local commits that make up the change.
-
-## Plain git underneath
-
-Every action is a git command you could type. Read-only review does not move HEAD, stash, or lock the repository:
-
-- Working changes: temp-index snapshot (`read-tree` / `add -A` / `write-tree` / `commit-tree`) at `refs/tabthrough/after/<id>`. Finish and Cancel delete that ref. Activation sweeps refs older than 24 hours.
-- Commit and range: no write. The diff is `base..after` from objects already in the repository.
-- Two windows can review the same repository at once.
-- A rebase, merge, or leftover autostash started in a terminal shows in the sidebar with **Continue**, **Abort**, **Pop**, and the other named git buttons. Their stdout and stderr go to the Tabthrough output channel.
-
-Rebase mode runs `git rebase -i --autostash` stopped at the reviewed commit. Finish is `add -u`, optional `add` of ticked untracked files, `commit --amend --no-edit`, then `rebase --continue`. Cancel is `git rebase --abort`. Worktree mode lands later. Details: [`work-docs/architecture/overview.md`](work-docs/architecture/overview.md).
-
-## Bring the author’s intent with `.guide.json`
-
-If a repository (or the agent that wrote the change) ships a `.guide.json`, its order and reasons replace the offline heuristic. Minimal example:
+- **Offline.** Heuristic order and sidecar guides run with no network, account, or API key.
+- **One Tab, one thought.** The native diff editor shows the change so far. Later lines stay hidden until you advance.
+- **Author's path.** A `.tabthrough.{topic}.guide.json` sidecar replaces the heuristic with intended order and notes. A broken guide falls back with one warning.
+- **Plain git.** Read-only review does not move `HEAD` or stash. Rebase mode is a stopped `git rebase -i`. Worktree mode is not shipped.
+- **Three targets.** Working changes (staged, unstaged, untracked), one commit, or a merge-base-aware range. One-click GitHub or GitLab PR entry is not shipped.
 
 ```json
 {
   "$schema": "https://raw.githubusercontent.com/artalar/tabthrough/main/schema/guide-v1.json",
   "version": 1,
+  "topic": "order-type",
   "steps": [
-    { "id": "types", "path": "src/types.ts", "rationale": "Types before callers" },
-    { "id": "service", "path": "src/service.ts", "rationale": "The first consumer of those types" }
+    { "id": "order", "path": "src/order.ts", "title": "An order has named fields", "rationale": "The contract before its consumers" },
+    { "id": "pricing", "path": "src/pricing.ts", "title": "Pricing consumes the contract", "rationale": "Behavior before the last caller" },
+    { "id": "checkout", "path": "src/checkout.ts", "title": "Checkout names its inputs", "rationale": "The caller after the type and the math" }
   ]
 }
 ```
 
-Malformed guides never block a review: every failure falls back to the heuristic with one warning. Schema: [`schema/guide-v1.json`](schema/guide-v1.json). Authoring: [`work-docs/guides/agent-guide-authoring.md`](work-docs/guides/agent-guide-authoring.md). Agent skill: [`.agents/skills/tabthrough/SKILL.md`](.agents/skills/tabthrough/SKILL.md).
+Path order would open `checkout.ts` first. The guide opens the contract first.
+
+```mermaid
+flowchart LR
+  subgraph pathOrder["Path order"]
+    direction LR
+    a["checkout.ts"] --> b["order.ts"] --> c["pricing.ts"]
+  end
+  subgraph walk["Walkthrough"]
+    direction LR
+    d["order.ts"] --> e["pricing.ts"] --> f["checkout.ts"]
+  end
+```
+
+- [Install](#install)
+- [Walk a change](#walk-a-change)
+- [Author a guide](#author-a-guide)
+- [Limitations](#limitations)
+- [Configurations](#configurations)
+- [Commands](#commands)
+- [Contributing](#contributing)
+
+---
+
+## Install
+
+There is no Marketplace listing yet. Sideload the VSIX. The packaging toolchain needs **Node 24** (`vsce` crashes on Node 25). The folder must be a **trusted** git repository — Tabthrough runs git and refuses untrusted or virtual workspaces.
+
+**Cursor**, from this repo:
+
+```bash
+pnpm install --frozen-lockfile
+pnpm ext:install
+```
+
+Reload the window if the extension was already open.
+
+**VS Code**, or a VSIX you pass around:
+
+```bash
+pnpm install --frozen-lockfile
+pnpm build
+# If you use mise:
+mise exec node@24 -- pnpm ext:package
+# Otherwise, with Node 24 on PATH:
+pnpm ext:package
+code --install-extension tabthrough-0.0.0.vsix
+```
+
+Requires VS Code 1.97 or later.
+
+### Try a disposable demo
+
+```bash
+node scripts/create-demo.mjs
+```
+
+Open the printed folder, run **Tabthrough: Review Working Changes**, start the walkthrough, and press **Tab**. The demo walks from an order type to its calculation and caller. It creates a new temporary repository each time; it does not change this project. The demo still ships the legacy `.guide.json` name, which Tabthrough still reads.
+
+---
+
+## Walk a change
+
+1. Open the Walkthrough sidebar (activity bar, or **Tabthrough: Show Walkthrough**).
+2. Choose working changes, a commit, or a commit range. Generate a Simple or Agent guide, or start from a sidecar already on disk. Dirty buffers are saved before a working-tree snapshot; a failed save stops the review.
+3. Read the current thought and press **Tab** (or **Next** in the sidebar).
+
+The sidebar shows **Will run:** before Start. Read-only prints **nothing** — it does not check out or stash.
+
+| Mode | What git does | Edit here | Status |
+|------|----------------|-----------|--------|
+| Read-only | Snapshot ref for working changes; commit and range touch nothing | Working-tree review: opens the real file | Landed |
+| Rebase | `git rebase -i --autostash` stopped at the reviewed commit. Commit or range on the current branch only — working changes stay read-only | Opens the real file. Finish amends and `--continue`; Cancel is `--abort` | Landed |
+| Worktree | Detached worktree in a new window | In that window | Not shipped |
+
+| Key | Action |
+|-----|--------|
+| **Tab** / **Alt+]** | Next thought |
+| **Shift+Tab** / **Alt+[** | Previous thought |
+| **Alt+Enter** | Edit here (review document focused) |
+
+Tab still indents in real file editors. Turn off `tabthrough.keybinding.useTab` to keep only the Alt shortcuts. Tabthrough never creates a commit for you.
+
+A rebase, merge, or leftover autostash started in a terminal shows in the sidebar with **Continue**, **Abort**, **Pop**, and the other named git buttons. Their output goes to the Tabthrough channel.
+
+---
+
+## Author a guide
+
+If the change already ships a sidecar, its order and notes replace the offline heuristic.
+
+| File | When |
+|------|------|
+| `.tabthrough.{topic}.guide.json` | Current name. Kebab topic in the filename; include matching `"topic"`. |
+| `.tabthrough-guide.json` | Fallback when no topic file is focused (`tabthrough.guideFile`). |
+| `.guide.json` | Legacy name, still read. |
+
+**Tabthrough: Install /tabthrough Skill** copies the authoring skill into the workspace so an agent can emit the sidecar with the change.
+
+Malformed guides never block a review: every failure falls back to the heuristic with one warning.
+
+- Schema: [`schema/guide-v1.json`](schema/guide-v1.json)
+- Authoring: [`work-docs/guides/agent-guide-authoring.md`](work-docs/guides/agent-guide-authoring.md)
+- Skill: [`.agents/skills/tabthrough/SKILL.md`](.agents/skills/tabthrough/SKILL.md)
+
+---
+
+## Limitations
+
+| Limitation | Today |
+|------------|--------|
+| **Marketplace / Open VSX** | Not published — sideload the VSIX |
+| **One-click remote PR URLs** | Use a local commit or range |
+| **Worktree mode** | Setting exists; the mode is not shipped |
+| **Rebase on working changes** | Not offered — the tree already holds the change; use read-only and Edit here |
+| **Multi-root workspaces** | First folder's repository only |
+| **Shallow clones missing parents** | Refused, with a fetch hint |
+| **Binary / rename / mode / symlink / generated** | Stub steps; Edit here is for text files |
+| **Whitespace-only diffs** | Start refused |
+| **Rebase / merge / cherry-pick already in progress** | Start still works in read-only; the sidebar shows git's state |
+
+Git internals and the session design: [`work-docs/architecture/overview.md`](work-docs/architecture/overview.md).
+
+---
 
 ## Configurations
 
 <!-- configs -->
 
-| Key                              | Description                                                                                                                  | Type      | Default                    |
-| -------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- | --------- | -------------------------- |
-| `tabthrough.showRationale`       | Show the one-line reason each step was ordered where it is (for example "types before callers") in the status bar.           | `boolean` | `true`                     |
-| `tabthrough.reveal.mode`         | How the reviewed change is revealed as you advance through steps.                                                            | `string`  | `"progressive"`            |
-| `tabthrough.session.mode`        | Which git primitive a session uses. Read-only and rebase are landed; worktree comes later.                                   | `string`  | `"ask"`                    |
-| `tabthrough.finish.hooks`        | Run git hooks (pre-rebase, pre-commit, commit-msg) when starting and finishing a rebase review. Off by default.              | `boolean` | `false`                    |
-| `tabthrough.finish.sign`         | GPG-sign the amended commit and replayed commits. Off by default; replayed commits stay unsigned unless this is on.          | `boolean` | `false`                    |
-| `tabthrough.guideFile`           | Repository-relative path of the optional guide sidecar that overrides the heuristic step order.                              | `string`  | `".tabthrough-guide.json"` |
-| `tabthrough.keybinding.useTab`   | Bind Tab to the next review step while a review document is focused. Alt+] and Alt+[ always work regardless of this setting. | `boolean` | `true`                     |
-| `tabthrough.maxLinesPerStep`     | Upper bound on how many low-significance changed lines are coalesced into a single step.                                     | `number`  | `24`                       |
-| `tabthrough.hideFormattingSteps` | Drop steps whose changes are whitespace or comments only.                                                                    | `boolean` | `false`                    |
-| `tabthrough.worktree.dir`        | Root directory for Tabthrough worktrees. Empty uses the OS temp directory under tabthrough/.                                 | `string`  | `""`                       |
+| Key                              | Description                                                                                                                      | Type      | Default                    |
+| -------------------------------- | -------------------------------------------------------------------------------------------------------------------------------- | --------- | -------------------------- |
+| `tabthrough.showRationale`       | Show the one-line reason each step was ordered where it is (for example "types before callers") in the status bar.               | `boolean` | `true`                     |
+| `tabthrough.reveal.mode`         | How the reviewed change is revealed as you advance through steps.                                                                | `string`  | `"progressive"`            |
+| `tabthrough.session.mode`        | Which git primitive a session uses. Read-only and rebase are landed; worktree comes later.                                       | `string`  | `"ask"`                    |
+| `tabthrough.finish.hooks`        | Run git hooks (pre-rebase, pre-commit, commit-msg) when starting and finishing a rebase review. Off by default.                  | `boolean` | `false`                    |
+| `tabthrough.finish.sign`         | GPG-sign the amended commit and replayed commits. Off by default; replayed commits stay unsigned unless this is on.              | `boolean` | `false`                    |
+| `tabthrough.guideFile`           | Fallback sidecar path when no .tabthrough.{topic}.guide.json is focused. Generated reviews write .tabthrough.{topic}.guide.json. | `string`  | `".tabthrough-guide.json"` |
+| `tabthrough.keybinding.useTab`   | Bind Tab to the next review step while a review document is focused. Alt+] and Alt+[ always work regardless of this setting.     | `boolean` | `true`                     |
+| `tabthrough.maxLinesPerStep`     | Upper bound on how many low-significance changed lines are coalesced into a single step.                                         | `number`  | `24`                       |
+| `tabthrough.hideFormattingSteps` | Drop steps whose changes are whitespace or comments only.                                                                        | `boolean` | `false`                    |
+| `tabthrough.worktree.dir`        | Root directory for Tabthrough worktrees. Empty uses the OS temp directory under tabthrough/.                                     | `string`  | `""`                       |
 
 <!-- configs -->
 
@@ -122,6 +182,7 @@ Malformed guides never block a review: every failure falls back to the heuristic
 | `tabthrough.pickRange`       | Tabthrough: Pick a Commit Range               |
 | `tabthrough.selectCommit`    | Tabthrough: Select Commit                     |
 | `tabthrough.submitRange`     | Tabthrough: Use Commit Range                  |
+| `tabthrough.setGuideTopic`   | Tabthrough: Set Guide Topic                   |
 | `tabthrough.generateSimple`  | Tabthrough: Generate Simple Guide             |
 | `tabthrough.generateAgent`   | Tabthrough: Ask Editor Agent                  |
 | `tabthrough.setupBack`       | Tabthrough: Back                              |
@@ -145,19 +206,6 @@ Malformed guides never block a review: every failure falls back to the heuristic
 
 <!-- commands -->
 
-## Known limitations
-
-| Limitation | Behaviour today |
-|------------|-----------------|
-| **Multi-root workspaces** | First folder’s repository only |
-| **Rebase / merge / cherry-pick in progress** | Start still works; the sidebar shows git's state and the native buttons |
-| **Shallow clones missing parents** | Refused with a fetch hint |
-| **One-click remote PR URLs** | Planned — use commit/range locally for now |
-| **LLM-generated guides** | Planned (BYOK); default path is offline |
-| **Binary / rename / mode / symlink / generated changes** | Explanation stub steps; Edit here is for text files |
-| **Whitespace-only diffs** | Start refused |
-| **Rebase and worktree modes** | Settings exist; Start still lands on read-only until those phases ship |
-
 ## Contributing
 
 ```bash
@@ -165,8 +213,8 @@ pnpm install
 pnpm lint && pnpm typecheck && pnpm test:ci
 ```
 
-The git, guide, and model layers never import `vscode`, so safety and ordering suites run under plain vitest. Design docs live under [`work-docs/`](work-docs/). Built on [Reatom](https://v1001.reatom.dev) and [reactive-vscode](https://kermanx.github.io/reactive-vscode/).
+The git, guide, and model layers never import `vscode`, so those suites run under plain vitest. Design docs live under [`work-docs/`](work-docs/). Built on [Reatom](https://v1001.reatom.dev) and [reactive-vscode](https://kermanx.github.io/reactive-vscode/).
 
 ## License
 
-[MIT](./LICENSE.md) License © 2026 [artalar](https://github.com/artalar)
+[MIT](./LICENSE.md) © 2026 [Arutyunyan Artem](https://github.com/artalar)
