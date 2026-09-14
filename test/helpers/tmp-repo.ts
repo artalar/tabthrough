@@ -5,6 +5,7 @@ import { chmod, mkdir, mkdtemp, readFile, realpath, rm, stat, writeFile } from '
 import { tmpdir } from 'node:os'
 import { dirname, join } from 'node:path'
 import process from 'node:process'
+import { setTimeout as delay } from 'node:timers/promises'
 import { pathToFileURL } from 'node:url'
 
 /**
@@ -132,11 +133,40 @@ export async function makeTempDir(): Promise<string> {
   return dir
 }
 
+function isBusyFsError(error: unknown): boolean {
+  if (typeof error !== 'object' || error === null || !('code' in error))
+    return false
+  const code = error.code
+  return code === 'EBUSY' || code === 'EPERM' || code === 'ENOTEMPTY'
+}
+
+async function removeTempDir(dir: string): Promise<void> {
+  const attempts = isWindows ? 10 : 1
+  let waitMs = 50
+  for (let attempt = 1; attempt <= attempts; attempt++) {
+    try {
+      await rm(dir, {
+        recursive: true,
+        force: true,
+        maxRetries: isWindows ? 10 : 3,
+        retryDelay: isWindows ? 100 : 50,
+      })
+      return
+    }
+    catch (error) {
+      if (!isWindows || !isBusyFsError(error) || attempt === attempts)
+        throw error
+      await delay(waitMs)
+      waitMs = Math.min(waitMs * 2, 1000)
+    }
+  }
+}
+
 export async function cleanupTempRepos(): Promise<void> {
   while (CREATED.length > 0) {
     const dir = CREATED.pop()
     if (dir !== undefined)
-      await rm(dir, { recursive: true, force: true, maxRetries: 3 })
+      await removeTempDir(dir)
   }
 }
 

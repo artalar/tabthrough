@@ -249,11 +249,12 @@ function selectRow(row: SidebarItemData): string {
   const enabled = row.enabled !== false
   const fieldId = `field-${row.id}`
   const selected = row.payload ?? ''
+  const extraClass = row.id === 'review-kind' ? ' header-kind' : ''
   const options = (row.choices ?? []).map((choice) => {
     const isSelected = choice.value === selected ? ' selected' : ''
     return `<option value="${htmlAttr(choice.value, 200)}"${isSelected}>${htmlText(choice.label, 200)}</option>`
   }).join('')
-  return `<label class="select-row" data-id="${htmlAttr(row.id, 80)}"><span class="field-label">${htmlText(row.label, 80)}</span><select id="${fieldId}" data-command="${htmlAttr(command, 100)}" data-id="${htmlAttr(row.id, 80)}"${enabled ? '' : ' disabled'}>${options}</select></label>`
+  return `<label class="select-row${extraClass}" data-id="${htmlAttr(row.id, 80)}"><span class="field-label">${htmlText(row.label, 80)}</span><select id="${fieldId}" data-command="${htmlAttr(command, 100)}" data-id="${htmlAttr(row.id, 80)}"${enabled ? '' : ' disabled'}>${options}</select></label>`
 }
 
 function isRefControl(row: SidebarItemData): boolean {
@@ -303,6 +304,7 @@ function chrome(
   const right = next ?? finish
   const end = nav.find(row => row.id === 'cancel')
   const action = nav.find(row => isHeaderAction(row) && row.id !== 'next' && row.id !== 'finish')
+  const kind = nav.find(row => row.id === 'review-kind')
   const fields = rangeFields(headerFields)
   if (previous !== undefined || right !== undefined) {
     const progress = walkProgress(view)
@@ -312,9 +314,9 @@ function chrome(
   }
   const title = titles[0]
   const heading = title === undefined ? '' : `<h2 class="screen-title">${htmlText(title.label)}</h2>`
-  if (back === undefined && heading === '' && fields === '' && action === undefined)
+  if (back === undefined && heading === '' && fields === '' && action === undefined && kind === undefined)
     return ''
-  return `<header class="chrome setup"><div class="action-row">${back === undefined ? '' : button(back)}${heading}${action === undefined ? '' : button(action)}</div>${fields}</header>`
+  return `<header class="chrome setup"><div class="action-row">${back === undefined ? '' : button(back)}${heading}${kind === undefined ? '' : selectRow(kind)}${action === undefined ? '' : button(action)}</div>${fields}</header>`
 }
 
 function isChoiceRow(row: SidebarItemData): boolean {
@@ -418,6 +420,9 @@ const SIDEBAR_STYLE = [
   'header.chrome .action-row{display:flex;align-items:center;gap:var(--space-2)}',
   'header.chrome .action-row .screen-title{flex:1 1 auto;min-width:0}',
   'header.chrome .action-row .primary{margin-left:auto;flex:0 0 auto;min-width:max-content;white-space:nowrap}',
+  'header.chrome .action-row .header-kind{flex:1 1 10rem;min-width:0;margin:0;display:flex;flex-direction:column;gap:2px}',
+  'header.chrome .action-row .header-kind .field-label{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0)}',
+  'header.chrome .action-row:has(.header-kind) .primary{margin-left:0}',
   'header.chrome .subhead{display:flex;align-items:center;justify-content:space-between;gap:var(--space-2)}',
   'header.chrome.walk .progress{flex:1 1 auto;text-align:center;color:var(--vscode-descriptionForeground);font-variant-numeric:tabular-nums;font-size:var(--type-meta)}',
   'header.chrome.setup .back{margin:0}',

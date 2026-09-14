@@ -85,6 +85,7 @@ describe('contributed commands', () => {
       'tabthrough.selectHomeRev',
       'tabthrough.setBranch',
       'tabthrough.setGuideTopic',
+      'tabthrough.setHomeReviewKind',
       'tabthrough.setRemote',
       'tabthrough.setupBack',
       'tabthrough.showAutostash',
@@ -297,6 +298,7 @@ describe('keybindings', () => {
       'tabthrough.setBranch',
       'tabthrough.fetchRemote',
       'tabthrough.reviewSelection',
+      'tabthrough.setHomeReviewKind',
     ])
       expect(hidden.has(command), command).toBe(true)
   })

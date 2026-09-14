@@ -35,6 +35,7 @@ import {
   pickCommitRev,
   pickRange,
   pickWorkingTree,
+  plannedHomeReview,
   resetSetup,
   reviewSelection,
   selectCommit,
@@ -42,6 +43,7 @@ import {
   selectRangeRev,
   setBranch,
   setGuideTopic,
+  setHomeReviewKind,
   setRangeBound,
   setRemote,
   setupBack,
@@ -82,15 +84,28 @@ export function useGuideCommands(): void {
       if (typeof name === 'string')
         setBranch(name)
     })),
+    [Commands.setHomeReviewKind]: wrap((kind?: unknown) => guard('setHomeReviewKind', async () => {
+      if (typeof kind === 'string')
+        setHomeReviewKind(kind)
+    })),
     [Commands.fetchRemote]: wrap(() => guard('fetchRemote', () => fetchRemote())),
     [Commands.reviewSelection]: wrap(() => guard('reviewSelection', async () => {
       await wrap(reviewSelection())
       const entry = peek(pendingEntry)
       if (entry === null)
         return
+      const plan = plannedHomeReview(entry)
+      if (plan.kind === 'generate-agent') {
+        await beginAgentGuide()
+        return
+      }
+      if (plan.kind === 'generate-simple') {
+        await wrap(generateSimpleGuide())
+        return
+      }
       if (!await refuseIfBlocked())
         return
-      await wrap(startSession({ entry }))
+      await wrap(startSession({ entry, sessionMode: plan.sessionMode }))
     })),
     [Commands.selectCommit]: wrap((rev?: unknown) => guard('selectCommit', async () => {
       if (typeof rev !== 'string')
@@ -123,19 +138,7 @@ export function useGuideCommands(): void {
         setGuideTopic(raw)
     })),
     [Commands.generateSimple]: wrap(() => guard('generateSimple', () => generateSimpleGuide())),
-    [Commands.generateAgent]: wrap(() => guard('generateAgent', async () => {
-      if (peek(skillInstalled.data) === false) {
-        const answer = await wrap(peek(ports).ui.notify(
-          'info',
-          'Agent needs the /tabthrough skill in this workspace. Install it and continue?',
-          ['Install and continue', 'Cancel'],
-        ))
-        if (answer !== 'Install and continue')
-          return
-        await wrap(installWorkspaceSkill())
-      }
-      await wrap(generateAgentGuide())
-    })),
+    [Commands.generateAgent]: wrap(() => guard('generateAgent', () => beginAgentGuide())),
     [Commands.setupBack]: wrap(() => guard('setupBack', async () => setupBack())),
     [Commands.chooseMode]: wrap((mode?: unknown) => guard('chooseMode', async () => {
       if (mode === 'readonly' || mode === 'rebase' || mode === 'worktree')
@@ -181,6 +184,20 @@ async function refuseIfBlocked(): Promise<boolean> {
     return true
   await window.showWarningMessage(peek(startBlockedReason) ?? 'Tabthrough cannot start right now.')
   return false
+}
+
+async function beginAgentGuide(): Promise<void> {
+  if (peek(skillInstalled.data) === false) {
+    const answer = await wrap(peek(ports).ui.notify(
+      'info',
+      'Agent needs the /tabthrough skill in this workspace. Install it and continue?',
+      ['Install and continue', 'Cancel'],
+    ))
+    if (answer !== 'Install and continue')
+      return
+    await wrap(installWorkspaceSkill())
+  }
+  await wrap(generateAgentGuide())
 }
 
 async function beginWorkingTree(): Promise<void> {
