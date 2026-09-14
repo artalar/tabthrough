@@ -75,6 +75,7 @@ function idleHome(overrides: Partial<HomeSetupPhase> = {}): HomeSetupPhase {
     selection: { kind: 'none' },
     fetching: false,
     fetchError: null,
+    reviewKind: 'agent',
     ...overrides,
   }
 }

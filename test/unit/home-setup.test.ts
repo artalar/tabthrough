@@ -6,11 +6,14 @@ import {
   fetchRemote,
   gitBranches,
   gitRemotes,
+  homeReviewKind,
   pickWorkingTree,
+  plannedHomeReview,
   recentCommits,
   reviewSelection,
   selectHomeRev,
   setBranch,
+  setHomeReviewKind,
   setRemote,
   setupPhase,
 } from '../../src/model/setup'
@@ -55,6 +58,7 @@ describe('home setup machine', () => {
     expect(peek(setupPhase)).toMatchObject({
       kind: 'home',
       loading: false,
+      reviewKind: 'agent',
       commits: expect.arrayContaining([
         expect.objectContaining({ sha: older, subject: 'older' }),
         expect.objectContaining({ sha: newer, subject: 'newer' }),
@@ -252,5 +256,19 @@ describe('home setup machine', () => {
       remotes: [],
       branches: [],
     })
+  })
+
+  it('plans Review from the type selector, defaulting to the editor agent', () => {
+    expect(peek(homeReviewKind)).toBe('agent')
+    expect(plannedHomeReview({ kind: 'commit', rev: 'abc' })).toEqual({ kind: 'generate-agent' })
+    setHomeReviewKind('simple')
+    expect(plannedHomeReview({ kind: 'commit', rev: 'abc' })).toEqual({ kind: 'generate-simple' })
+    setHomeReviewKind('readonly')
+    expect(plannedHomeReview({ kind: 'commit', rev: 'abc' })).toEqual({ kind: 'start', sessionMode: 'readonly' })
+    setHomeReviewKind('rebase')
+    expect(plannedHomeReview({ kind: 'commit', rev: 'abc' })).toEqual({ kind: 'start', sessionMode: 'rebase' })
+    expect(plannedHomeReview({ kind: 'workingTree' })).toEqual({ kind: 'start', sessionMode: 'readonly' })
+    setHomeReviewKind('nope')
+    expect(peek(homeReviewKind)).toBe('rebase')
   })
 })

@@ -1,0 +1,92 @@
+{
+  "$schema": "https://raw.githubusercontent.com/artalar/tabthrough/main/schema/guide-v1.json",
+  "version": 1,
+  "topic": "home-review-type",
+  "scope": { "kind": "workingTree" },
+  "summary": "A type selector sits in the header before Review and defaults to Ask editor agent. Review follows that plan: agent or Simple generate, otherwise start read-only or rebase. Working-tree rebase is omitted and coerced. Tests, manifest ids, and this sidecar are skipped.",
+  "files": {
+    "README.md": { "significance": "skip", "rationale": "Walk step 3 restates the selector for users" },
+    "package.json": { "significance": "skip", "rationale": "Command id and palette hiding" },
+    "src/ui/sidebar-commands.ts": { "significance": "skip", "rationale": "Allowlists the type payload" },
+    "test/unit/contributions.test.ts": { "significance": "skip", "rationale": "Manifest list" },
+    "test/unit/home-setup.test.ts": { "significance": "skip", "rationale": "Planner cases for the rules you walk" },
+    "test/unit/home-sidebar.test.ts": { "significance": "skip", "rationale": "Row contract for the selector" },
+    "test/unit/sidebar-html.test.ts": { "significance": "skip", "rationale": "Markup fixtures" },
+    "test/unit/sidebar.test.ts": { "significance": "skip", "rationale": "Projection fixture" },
+    ".tabthrough.home-review-type.guide.json": { "significance": "skip", "rationale": "This walk, written into the tree it describes" }
+  },
+  "steps": [
+    {
+      "id": "default-agent",
+      "order": 10,
+      "path": "src/model/setup.ts",
+      "ranges": [{ "start": 58, "end": 65 }],
+      "significance": "critical",
+      "title": "Agent is the default review type",
+      "rationale": "The type every later selector and Review click consults"
+    },
+    {
+      "id": "planned-review",
+      "order": 20,
+      "path": "src/model/setup.ts",
+      "ranges": [{ "start": 217, "end": 249 }],
+      "significance": "critical",
+      "title": "Review plans from that type",
+      "rationale": "First consumer — generate versus start, with working-tree rebase coerced",
+      "dependsOn": ["default-agent"],
+      "notes": "Working-tree Review maps rebase to readonly. The dropdown can omit the option; a leftover kind still cannot start a rebase."
+    },
+    {
+      "id": "kind-choices",
+      "order": 30,
+      "path": "src/model/sidebar.ts",
+      "ranges": [{ "start": 785, "end": 794 }],
+      "significance": "high",
+      "title": "Type labels, no rebase on working tree",
+      "rationale": "The option list the header select will show",
+      "dependsOn": ["planned-review"],
+      "notes": "The labels are the old generate-screen rows. Rebase stays off working changes because there is no commit to stop on."
+    },
+    {
+      "id": "kind-nav",
+      "order": 40,
+      "path": "src/model/sidebar.ts",
+      "ranges": [{ "start": 651, "end": 659 }],
+      "significance": "high",
+      "title": "Selector sits before Review",
+      "rationale": "First consumer of those labels — nav slot, immediately before the primary",
+      "dependsOn": ["kind-choices"]
+    },
+    {
+      "id": "header-row",
+      "order": 50,
+      "path": "src/ui/sidebar-html.ts",
+      "ranges": [
+        { "start": 252, "end": 252 },
+        { "start": 257, "end": 257 },
+        { "start": 307, "end": 307 },
+        { "start": 317, "end": 319 },
+        { "start": 423, "end": 425 }
+      ],
+      "significance": "high",
+      "title": "Same header row as Review",
+      "rationale": "Back in the HTML, now the compact row the nav item asked for",
+      "dependsOn": ["kind-nav"],
+      "notes": "header-kind clips the Type label so the native select can sit beside Review. :has drops the old margin-left: auto that shoved the button to the far edge."
+    },
+    {
+      "id": "review-dispatch",
+      "order": 60,
+      "path": "src/commands/index.ts",
+      "ranges": [
+        { "start": 97, "end": 105 },
+        { "start": 108, "end": 108 }
+      ],
+      "significance": "high",
+      "title": "Review runs the plan",
+      "rationale": "The Review click follows the plan, agent first",
+      "dependsOn": ["planned-review"],
+      "notes": "Ask editor agent and Generate Simple guide return without startSession. Read-only and Rebase still start, with the planned sessionMode."
+    }
+  ]
+}

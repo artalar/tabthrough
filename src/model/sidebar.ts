@@ -1,10 +1,10 @@
 import type { CommitSummary } from '../git/log'
 import type { GitState } from '../git/state'
 import type { ReviewTarget, SessionMode } from '../git/types'
-import type { HomeSetupPhase, RangeSetupPhase } from './setup'
+import type { HomeReviewKind, HomeSetupPhase, RangeSetupPhase } from './setup'
 import type { SidebarViewModel } from './view'
 import { commands as Commands } from '../generated/meta'
-import { reviewTargetFromHome } from './setup'
+import { DEFAULT_HOME_REVIEW_KIND, reviewTargetFromHome } from './setup'
 
 export function safeSidebarText(value: string, max = 500): string {
   const clean = [...value].filter((character) => {
@@ -556,6 +556,7 @@ const EMPTY_HOME_PHASE: HomeSetupPhase = {
   selection: { kind: 'none' },
   fetching: false,
   fetchError: null,
+  reviewKind: DEFAULT_HOME_REVIEW_KIND,
 }
 
 function addIdleItems(view: SidebarViewModel, add: (item: SidebarItemData) => void): void {
@@ -647,6 +648,15 @@ function addHomeItems(
   }
 
   const reviewTarget = reviewTargetFromHome(phase.selection, phase.selectedBranch, phase.defaultBase)
+  add({
+    id: 'review-kind',
+    label: 'Type',
+    command: Commands.setHomeReviewKind,
+    payload: phase.reviewKind,
+    choices: homeReviewChoices(phase.selection),
+    enabled: view.canStart,
+    slot: 'nav',
+  })
   add({
     id: 'review',
     label: homeReviewLabel(phase),
@@ -770,6 +780,17 @@ function treeIsDirty(state: GitState | null): boolean {
   if (state === null)
     return false
   return state.staged > 0 || state.unstaged > 0 || state.untracked > 0
+}
+
+function homeReviewChoices(selection: HomeSetupPhase['selection']): { readonly value: HomeReviewKind, readonly label: string }[] {
+  const choices: { readonly value: HomeReviewKind, readonly label: string }[] = [
+    { value: 'agent', label: 'Ask editor agent' },
+    { value: 'simple', label: 'Generate Simple guide' },
+    { value: 'readonly', label: 'Read-only' },
+  ]
+  if (selection.kind !== 'workingTree')
+    return [...choices, { value: 'rebase', label: 'Rebase' }]
+  return choices
 }
 
 function selectChoices(
