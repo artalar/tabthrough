@@ -60,6 +60,7 @@ function idleHome(overrides: Partial<HomeSetupPhase> = {}): HomeSetupPhase {
     selection: { kind: 'none' },
     fetching: false,
     fetchError: null,
+    reviewKind: 'agent',
     ...overrides,
   }
 }
@@ -345,6 +346,10 @@ describe('sidebar text boundary', () => {
     expect(html).toContain('list-pick')
     expect(html).toContain('data-id="working-tree"')
     expect(html).toContain('data-command="tabthrough.reviewSelection"')
+    expect(html).toContain('data-command="tabthrough.setHomeReviewKind"')
+    expect(html).toContain('Ask editor agent')
+    expect(html).toContain('header-kind')
+    expect(html.indexOf('data-id="review-kind"')).toBeLessThan(html.indexOf('data-command="tabthrough.reviewSelection"'))
     expect(html).toContain('data-command="tabthrough.selectHomeRev"')
     expect(html).toContain('data-command="tabthrough.setRemote"')
     expect(html).toContain('data-command="tabthrough.setBranch"')

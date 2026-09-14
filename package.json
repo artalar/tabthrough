@@ -143,6 +143,12 @@
         "enablement": "tabthrough.canStart"
       },
       {
+        "command": "tabthrough.setHomeReviewKind",
+        "title": "Set Home Review Type",
+        "category": "Tabthrough",
+        "enablement": "tabthrough.canStart"
+      },
+      {
         "command": "tabthrough.selectCommit",
         "title": "Select Commit",
         "category": "Tabthrough",
@@ -369,6 +375,10 @@
         },
         {
           "command": "tabthrough.reviewSelection",
+          "when": "false"
+        },
+        {
+          "command": "tabthrough.setHomeReviewKind",
           "when": "false"
         }
       ]

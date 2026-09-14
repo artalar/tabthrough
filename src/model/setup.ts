@@ -1,6 +1,6 @@
 import type { CommitSummary } from '../git/log'
 import type { GitBranch, GitRemote } from '../git/remotes'
-import type { ReviewTarget } from '../git/types'
+import type { ReviewTarget, SessionMode } from '../git/types'
 import type { GuideScopeDoc } from '../guide/schema'
 import {
   abortVar,
@@ -55,6 +55,15 @@ export type HomeSelection
     | { readonly kind: 'commit', readonly rev: string }
     | { readonly kind: 'range', readonly from: string, readonly to: string }
 
+export type HomeReviewKind = 'agent' | 'simple' | 'readonly' | 'rebase'
+
+export const DEFAULT_HOME_REVIEW_KIND: HomeReviewKind = 'agent'
+
+export type PlannedHomeReview
+  = | { readonly kind: 'generate-agent' }
+    | { readonly kind: 'generate-simple' }
+    | { readonly kind: 'start', readonly sessionMode: Extract<SessionMode, 'readonly' | 'rebase'> }
+
 export interface HomeSetupPhase extends HistorySetupPhase {
   readonly kind: 'home'
   readonly remotes: readonly GitRemote[]
@@ -65,6 +74,7 @@ export interface HomeSetupPhase extends HistorySetupPhase {
   readonly selection: HomeSelection
   readonly fetching: boolean
   readonly fetchError: string | null
+  readonly reviewKind: HomeReviewKind
 }
 
 export interface CommitsSetupPhase extends HistorySetupPhase {
@@ -115,6 +125,7 @@ const remoteOverride = atom<string | null>(null, 'setup.remoteOverride')
 const branchOverride = atom<string | null>(null, 'setup.branchOverride')
 const fetchingRemote = atom(false, 'setup.fetching')
 const fetchError = atom<string | null>(null, 'setup.fetchError')
+export const homeReviewKind = atom<HomeReviewKind>(DEFAULT_HOME_REVIEW_KIND, 'setup.homeReviewKind')
 const refsEpoch = atom(0, 'setup.refsEpoch')
 
 const EMPTY_REMOTES: readonly GitRemote[] = []
@@ -203,6 +214,40 @@ function homeSelection(): HomeSelection {
   return { kind: 'none' }
 }
 
+export function isHomeReviewKind(value: string): value is HomeReviewKind {
+  return value === 'agent' || value === 'simple' || value === 'readonly' || value === 'rebase'
+}
+
+export function resolvedHomeReviewKind(
+  kind: HomeReviewKind,
+  selection: HomeSelection,
+): HomeReviewKind {
+  if (kind === 'rebase' && selection.kind === 'workingTree')
+    return 'readonly'
+  return kind
+}
+
+export const setHomeReviewKind = action((raw: string) => {
+  if (isHomeReviewKind(raw))
+    homeReviewKind.set(raw)
+}, 'setup.setHomeReviewKind')
+
+export function plannedHomeReview(
+  entry: ReviewTarget,
+  kind: HomeReviewKind = peek(homeReviewKind),
+): PlannedHomeReview {
+  const resolved = entry.kind === 'workingTree'
+    ? resolvedHomeReviewKind(kind, { kind: 'workingTree' })
+    : kind
+  if (resolved === 'agent')
+    return { kind: 'generate-agent' }
+  if (resolved === 'simple')
+    return { kind: 'generate-simple' }
+  if (resolved === 'rebase')
+    return { kind: 'start', sessionMode: 'rebase' }
+  return { kind: 'start', sessionMode: 'readonly' }
+}
+
 function homePhase(
   commits: readonly CommitSummary[],
   loading: boolean,
@@ -221,6 +266,7 @@ function homePhase(
     selection: homeSelection(),
     fetching: fetchingRemote(),
     fetchError: fetchError(),
+    reviewKind: resolvedHomeReviewKind(homeReviewKind(), homeSelection()),
   }
 }
 
@@ -237,6 +283,7 @@ const IDLE_HOME_PHASE: HomeSetupPhase = {
   selection: { kind: 'none' },
   fetching: false,
   fetchError: null,
+  reviewKind: DEFAULT_HOME_REVIEW_KIND,
 }
 
 export const setupPhase = computed((): SetupPhase => {
@@ -329,6 +376,7 @@ export const resetSetup = action(() => {
   branchOverride.set(null)
   fetchingRemote.set(false)
   fetchError.set(null)
+  homeReviewKind.set(DEFAULT_HOME_REVIEW_KIND)
   pendingEntry.set(null)
   chosenMode.set(null)
   guideTopic.set(DEFAULT_GUIDE_TOPIC)

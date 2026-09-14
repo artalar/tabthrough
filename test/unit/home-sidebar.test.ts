@@ -38,6 +38,7 @@ interface HomeSetupPhase {
   readonly selection: HomeSelection
   readonly fetching: boolean
   readonly fetchError: string | null
+  readonly reviewKind: 'agent' | 'simple' | 'readonly' | 'rebase'
 }
 
 function commitSummary(overrides: Partial<CommitSummary> & Pick<CommitSummary, 'sha' | 'subject'>): CommitSummary {
@@ -96,6 +97,7 @@ function homeSetup(overrides: Partial<HomeSetupPhase> = {}): HomeSetupPhase {
     selection: { kind: 'none' },
     fetching: false,
     fetchError: null,
+    reviewKind: 'agent',
     ...overrides,
   }
 }
@@ -178,6 +180,12 @@ describe('home sidebar', () => {
     expect(review?.slot).toBe('nav')
     expect(review?.tone).toBe('primary')
     expect(review?.label).toMatch(/Review|Working/i)
+    const kind = rows.find(row => row.id === 'review-kind')
+    expect(kind?.slot).toBe('nav')
+    expect(kind?.command).toBe('tabthrough.setHomeReviewKind')
+    expect(kind?.payload).toBe('agent')
+    expect(kind?.choices?.map(choice => choice.value)).toEqual(['agent', 'simple', 'readonly'])
+    expect(ids.indexOf('review-kind')).toBeLessThan(ids.indexOf('review'))
 
     expect(commands).not.toContain('tabthrough.pickCommit')
     expect(commands).not.toContain('tabthrough.pickRange')
@@ -215,6 +223,10 @@ describe('home sidebar', () => {
     expect(review?.slot).toBe('nav')
     expect(review?.tone).toBe('primary')
     expect(review?.label).toContain(NEWER.shortSha)
+    const kind = rows.find(row => row.id === 'review-kind')
+    expect(kind?.payload).toBe('agent')
+    expect(kind?.choices?.map(choice => choice.value)).toEqual(['agent', 'simple', 'readonly', 'rebase'])
+    expect(kind?.choices?.some(choice => choice.label === 'Ask editor agent')).toBe(true)
   })
 
   it('hides working changes when the checkout is clean', () => {
