@@ -6,6 +6,12 @@ export const SIDEBAR_COMMANDS = new Set([
   'tabthrough.pickCommit',
   'tabthrough.pickRange',
   'tabthrough.selectCommit',
+  'tabthrough.selectHomeRev',
+  'tabthrough.setRemote',
+  'tabthrough.setBranch',
+  'tabthrough.setHomeReviewKind',
+  'tabthrough.fetchRemote',
+  'tabthrough.reviewSelection',
   'tabthrough.submitRange',
   'tabthrough.generateSimple',
   'tabthrough.generateAgent',
@@ -32,6 +38,10 @@ export const SIDEBAR_COMMANDS = new Set([
 
 export const PAYLOAD_COMMANDS = new Set([
   'tabthrough.selectCommit',
+  'tabthrough.selectHomeRev',
+  'tabthrough.setRemote',
+  'tabthrough.setBranch',
+  'tabthrough.setHomeReviewKind',
   'tabthrough.setGuideTopic',
   'tabthrough.submitRange',
   'tabthrough.chooseMode',

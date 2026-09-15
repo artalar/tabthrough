@@ -14,6 +14,7 @@ import {
   finishSession,
   openConflict,
   openWorktree,
+  pendingEntry,
   popAutostash,
   ports,
   pruneWorktrees,
@@ -21,8 +22,10 @@ import {
   session,
   showAutostash,
   startBlockedReason,
+  startSession,
 } from '../model/session'
 import {
+  fetchRemote,
   focusRangeBound,
   generateAgentGuide,
   generateSimpleGuide,
@@ -32,11 +35,17 @@ import {
   pickCommitRev,
   pickRange,
   pickWorkingTree,
+  plannedHomeReview,
   resetSetup,
+  reviewSelection,
   selectCommit,
+  selectHomeRev,
   selectRangeRev,
+  setBranch,
   setGuideTopic,
+  setHomeReviewKind,
   setRangeBound,
+  setRemote,
   setupBack,
   setupPhase,
   skillInstalled,
@@ -63,6 +72,41 @@ export function useGuideCommands(): void {
     [Commands.pickWorkingTree]: wrap(() => guard('pickWorkingTree', async () => pickWorkingTree())),
     [Commands.pickCommit]: wrap(() => guard('pickCommit', () => loadCommits())),
     [Commands.pickRange]: wrap(() => guard('pickRange', () => pickRange())),
+    [Commands.selectHomeRev]: wrap((rev?: unknown) => guard('selectHomeRev', async () => {
+      if (typeof rev === 'string')
+        selectHomeRev(rev)
+    })),
+    [Commands.setRemote]: wrap((name?: unknown) => guard('setRemote', async () => {
+      if (typeof name === 'string')
+        setRemote(name)
+    })),
+    [Commands.setBranch]: wrap((name?: unknown) => guard('setBranch', async () => {
+      if (typeof name === 'string')
+        setBranch(name)
+    })),
+    [Commands.setHomeReviewKind]: wrap((kind?: unknown) => guard('setHomeReviewKind', async () => {
+      if (typeof kind === 'string')
+        setHomeReviewKind(kind)
+    })),
+    [Commands.fetchRemote]: wrap(() => guard('fetchRemote', () => fetchRemote())),
+    [Commands.reviewSelection]: wrap(() => guard('reviewSelection', async () => {
+      await wrap(reviewSelection())
+      const entry = peek(pendingEntry)
+      if (entry === null)
+        return
+      const plan = plannedHomeReview(entry)
+      if (plan.kind === 'generate-agent') {
+        await beginAgentGuide()
+        return
+      }
+      if (plan.kind === 'generate-simple') {
+        await wrap(generateSimpleGuide())
+        return
+      }
+      if (!await refuseIfBlocked())
+        return
+      await wrap(startSession({ entry, sessionMode: plan.sessionMode }))
+    })),
     [Commands.selectCommit]: wrap((rev?: unknown) => guard('selectCommit', async () => {
       if (typeof rev !== 'string')
         return
@@ -94,19 +138,7 @@ export function useGuideCommands(): void {
         setGuideTopic(raw)
     })),
     [Commands.generateSimple]: wrap(() => guard('generateSimple', () => generateSimpleGuide())),
-    [Commands.generateAgent]: wrap(() => guard('generateAgent', async () => {
-      if (peek(skillInstalled.data) === false) {
-        const answer = await wrap(peek(ports).ui.notify(
-          'info',
-          'Agent needs the /tabthrough skill in this workspace. Install it and continue?',
-          ['Install and continue', 'Cancel'],
-        ))
-        if (answer !== 'Install and continue')
-          return
-        await wrap(installWorkspaceSkill())
-      }
-      await wrap(generateAgentGuide())
-    })),
+    [Commands.generateAgent]: wrap(() => guard('generateAgent', () => beginAgentGuide())),
     [Commands.setupBack]: wrap(() => guard('setupBack', async () => setupBack())),
     [Commands.chooseMode]: wrap((mode?: unknown) => guard('chooseMode', async () => {
       if (mode === 'readonly' || mode === 'rebase' || mode === 'worktree')
@@ -154,11 +186,29 @@ async function refuseIfBlocked(): Promise<boolean> {
   return false
 }
 
+async function beginAgentGuide(): Promise<void> {
+  if (peek(skillInstalled.data) === false) {
+    const answer = await wrap(peek(ports).ui.notify(
+      'info',
+      'Agent needs the /tabthrough skill in this workspace. Install it and continue?',
+      ['Install and continue', 'Cancel'],
+    ))
+    if (answer !== 'Install and continue')
+      return
+    await wrap(installWorkspaceSkill())
+  }
+  await wrap(generateAgentGuide())
+}
+
 async function beginWorkingTree(): Promise<void> {
   if (!await refuseIfBlocked())
     return
   await wrap(VscodeCommands.executeCommand('tabthrough.sidebar.focus'))
-  pickWorkingTree()
+  await wrap(pickWorkingTree())
+  const entry = peek(pendingEntry)
+  if (entry === null)
+    return
+  await wrap(startSession({ entry }))
 }
 
 async function beginCommitPicker(): Promise<void> {
