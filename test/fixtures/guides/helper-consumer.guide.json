@@ -2,7 +2,7 @@
   "$schema": "https://raw.githubusercontent.com/artalar/tabthrough/main/schema/guide-v1.json",
   "version": 1,
   "scope": { "kind": "commit", "base": "1111111", "head": "2222222" },
-  "summary": "Extract a shared action-name helper, then adopt it in jsxEvent. Two thoughts — do not read them as one flash.",
+  "summary": "Event call sites now share one rule for listener names. The rule comes first, then the first call site that uses it.",
   "steps": [
     {
       "id": "event-action-name",
@@ -10,9 +10,9 @@
       "path": "src/jsx/events.ts",
       "ranges": [{ "side": "new", "start": 1, "end": 4 }],
       "significance": "high",
-      "title": "Named action helper",
-      "rationale": "The contract every later event call site will share",
-      "notes": "`eventActionName` is the naming rule. Read it alone before any call site changes, or the refactor looks like noise."
+      "title": "One rule for event listener names",
+      "rationale": "The naming rule every event call site will share; read it on its own first",
+      "notes": "Every event binding turns an event type into a listener name the same way, for example click into onClick. Keeping that rule in one helper, `eventActionName`, stops call sites from drifting apart."
     },
     {
       "id": "jsx-event-adopts",
@@ -20,8 +20,8 @@
       "path": "src/jsx/events.ts",
       "ranges": [{ "side": "new", "start": 8, "end": 14 }],
       "significance": "high",
-      "title": "jsxEvent adopts the helper",
-      "rationale": "First consumer — only makes sense after the helper above",
+      "title": "JSX events use the shared rule",
+      "rationale": "The first call site to switch to that rule",
       "dependsOn": ["event-action-name"]
     }
   ]

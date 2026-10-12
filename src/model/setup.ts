@@ -105,7 +105,9 @@ export const COMMAND_TARGET = '.cursor/commands/tabthrough.md'
 
 export const COMMAND_BODY = `Follow the Tabthrough skill and write a \`.tabthrough.{topic}.guide.json\` for the review target in this chat.
 
-Study the real git patch first. One thought per Tab step; \`ranges\` when a file has more than one thought, anchored with new-file line numbers from \`git diff -U0\` hunk headers. Every step gets a \`title\` that names the thought, a \`rationale\` that says why it comes here, and \`notes\` only where the code cannot explain itself (plain text). Notes read like a journal figure discussion: consequence or invariant first, then the name — not a mechanism chain. State what is true; never "it's not A, it's B". No quizzes, no restating the diff.
+Study the real git patch first. One thought per Tab step; \`ranges\` when a file has more than one thought, anchored with new-file line numbers from \`git diff -U0\` hunk headers. Every step gets a \`title\` that names the thought, a \`rationale\` that says why to look at it now, and \`notes\` only where the code cannot explain itself (plain text).
+
+Write for someone who uses the product and reads the language but has never opened this module and was not in your session. Say what a person would notice first (what changes for the user, or what stays true), then the part on screen and its job, then the identifier in backticks only if they will search for it. Names you coined or learned while coding are not words the reader knows. State what is true; never "it's not A, it's B". No quizzes, no restating the diff.
 `
 
 type SetupKind = SetupPhase['kind']
@@ -717,10 +719,10 @@ export function agentPromptFor(target: ReviewTarget, sidecarPath: string, baseRe
     target.kind === 'range' ? `- scope.base / scope.head: ${target.from} .. ${target.to}` : '',
     '- one thought per step; split helper vs consumer, type vs caller, failure vs fix',
     '- use ranges whenever one file has more than one thought; anchor with new-file line numbers from `git diff -U0` hunk headers',
-    '- every step: `title` names the thought (≤ 60 chars); `rationale` says why it comes here (one line, ≤ 120 chars); `notes` only for the why that is not in the code (plain text: consequence or invariant first, then the name)',
-    '- `summary`: 2–3 sentences — the map the reviewer sees on every step',
+    '- every step: `title` names the thought in the product\'s words (≤ 60 chars); `rationale` says why to look at it now in one plain sentence that also reads as the "Up next" preview (≤ 120 chars, no identifiers); `notes` only for the why that is not in the code (plain text, ≤ 3 sentences: what a user would notice or what stays true, then the part on screen and its job, then the name)',
+    '- `summary`: 1–2 sentences, collapsed as the guide overview — the outcome for a person first, then the walk order',
     '- demote lockfiles, generated files, and mechanical fallout via `files` (`skip` / `low`) with a rationale that says why',
-    '- notes register: a teammate who was not in the room; affirmative claims (what is true, never "it\'s not A, it\'s B"); no mechanism chains; no session-private names',
+    '- reader: uses the product and reads the language, never opened this module, was not in your session; translate every coined or internal name into what it does for a person; affirmative claims (what is true, never "it\'s not A, it\'s B"); no mechanism chains',
     '- no quizzes, scores, or restating the diff',
     '',
     `When the file is written, leave it focused so the reviewer can press Start.`,

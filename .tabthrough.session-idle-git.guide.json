@@ -3,10 +3,10 @@
   "version": 1,
   "topic": "session-idle-git",
   "scope": { "kind": "workingTree" },
-  "summary": "Finish names leftover autostash even when continue's last progress line is the rebase success. Home remotes and history disconnect while a session is open. Lint import and quote noise is skipped.",
+  "summary": "Finish now warns when a rebase leaves your stash behind, and the home screen stops reading git while a review is open. The warning comes first, then the home change; formatting-only test edits are skipped.",
   "files": {
-    "test/integration/rebase-driver.test.ts": { "significance": "skip", "rationale": "Coverage for leftoverFinishNotice and the autostash Finish case" },
-    "test/integration/session-lifecycle.test.ts": { "significance": "skip", "rationale": "Named-import sort only" },
+    "test/integration/rebase-driver.test.ts": { "significance": "skip", "rationale": "Tests for the stash-left-behind warning" },
+    "test/integration/session-lifecycle.test.ts": { "significance": "skip", "rationale": "Import order only" },
     "test/unit/git-watch-deps.test.ts": { "significance": "skip", "rationale": "Import order only" },
     "test/unit/home-setup.test.ts": { "significance": "skip", "rationale": "Idle-home disconnect case" },
     "test/unit/sidebar-html.test.ts": { "significance": "skip", "rationale": "Quote-style assertion only" },
@@ -19,9 +19,9 @@
       "path": "src/git/rebase.ts",
       "ranges": [{ "start": 271, "end": 283 }],
       "significance": "critical",
-      "title": "Leftover stash keeps the autostash sentence",
-      "rationale": "The rule Finish uses when continue's last progress line is the rebase success",
-      "notes": "Carriage-return progress keeps the last segment. A leftover stash still gets Applying autostash resulted in conflicts. Your changes are safe in the stash."
+      "title": "Finish warns when your stash is left behind",
+      "rationale": "Where the warning text comes from; the next step shows it to the user",
+      "notes": "When a rebase finishes but git cannot put your stashed changes back, Finish now says so instead of closing silently. Git rewrites its progress line in place, so this reads only the last version of that line, the one a terminal would show."
     },
     {
       "id": "finish-warn",
@@ -29,8 +29,8 @@
       "path": "src/model/session.ts",
       "ranges": [{ "start": 954, "end": 958 }],
       "significance": "high",
-      "title": "Finish forwards that leftover notice",
-      "rationale": "First consumer — silent close, then the leftoverFinishNotice warn",
+      "title": "Finish shows the warning",
+      "rationale": "Finish used to close without a word in this case; now it shows the warning",
       "dependsOn": ["leftover-notice"]
     },
     {
@@ -39,9 +39,9 @@
       "path": "src/model/setup.ts",
       "ranges": [{ "start": 227, "end": 244 }],
       "significance": "high",
-      "title": "Home phase is empty while a session is open",
-      "rationale": "setupPhase stays subscribed for the walk; this return drops remotes and commit data reads",
-      "notes": "Reading gitRemotes.data from a live computed keeps the async query connected. The empty home is the disconnect."
+      "title": "Home stops reading git during a review",
+      "rationale": "Why background git work stops once a review starts",
+      "notes": "While a review is open, the home screen stops asking git for remotes and history. Before, those reads kept running for the whole walk. Returning an empty home here is what lets them stop."
     },
     {
       "id": "idle-queries",
@@ -49,8 +49,8 @@
       "path": "src/model/setup.ts",
       "ranges": [{ "start": 266, "end": 276 }],
       "significance": "high",
-      "title": "Home queries subscribe only while idle",
-      "rationale": "The effect that calls gitRemotes and git log, gated on idle the same way",
+      "title": "Home reads git only when no review is open",
+      "rationale": "The same rule for the remotes and history lists",
       "dependsOn": ["idle-home-phase"]
     }
   ]

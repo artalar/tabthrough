@@ -82,13 +82,13 @@ MVP reads a single document. Multi-document layouts (`.guide/*.json` keyed by re
 |-------|------|----------|---------|---------|
 | `id` | string | **yes** | — | Unique within the document. `^[A-Za-z0-9._:-]{1,64}$` |
 | `path` | string | **yes** | — | Repo-relative POSIX path, post-image (the path after the change; for a deletion, the path that was deleted) |
-| `rationale` | string | **yes** | — | One line, ≤ 120 chars. *Why this position in the order*, not what the code does |
+| `rationale` | string | **yes** | — | One line, ≤ 120 chars. Why look at this now, in plain words; also the Up next preview and status bar |
 | `order` | integer | no | index × 10 | Sparse sort key. Ascending |
 | `ranges` | array of Range | no | — | Which lines this step claims. Omitted → the step claims every line group in `path` not claimed by another step |
 | `significance` | `"critical" \| "high" \| "normal" \| "low" \| "skip"` | no | `"normal"` | §6.1 |
 | `grouping` | `"atomic" \| "split" \| "mergeWithNext"` | no | `"atomic"` | §6.2 |
 | `title` | string | no | — | Short label, ≤ 60 chars |
-| `notes` | string | no | — | Longer explanation, plain text, shown in the sidebar whenever present. ≤ 2000 chars |
+| `notes` | string | no | — | Longer explanation, plain text, shown first under the title; the first 480 chars are visible. ≤ 2000 chars |
 | `dependsOn` | array of string | no | `[]` | Step ids that must come earlier. Refines `order`, never contradicts it silently (§5.3) |
 | `tags` | array of string | no | `[]` | Free-form labels. Reserved for future filtering; ignored in v1 |
 
@@ -315,7 +315,7 @@ A change that adds a `Guide` type, a builder that produces it, a caller, and a t
       "significance": "critical",
       "title": "Significance weight",
       "rationale": "The new field every later change is about",
-      "notes": "`significance` is a teaching weight, not a severity. Nothing below makes sense until you have read this union."
+      "notes": "How much attention a step gets in the walk. Every later step reads this weight, so it comes first."
     },
     {
       "id": "builder-scoring",
@@ -387,7 +387,7 @@ MVP ships the read path only. This section is the contract track E publishes as 
 ### 10.2 Rules of thumb
 
 - **One step is one thought.** If the rationale needs "and", it is two steps.
-- **Rationale is about order, not content.** "Types before callers" is a rationale. "Adds a significance field" is a restatement of the diff, which the reader can already see.
+- **Rationale says why to look now; it is not a description of the code.** "Types before callers" is a rationale. "Adds a significance field" is a restatement of the diff, which the reader can already see.
 - **Notes are journal discussion, not a methods paragraph.** Consequence or invariant first; then the name if needed. A chain of implementation tokens (`sets`, `bumps`, `sleeps`, `promotes`) restates the highlight. State the present claim; do not open with "It's not A, it's B".
 - **Aim for 8–25 steps** on a typical PR. Above 40, the reader is skimming again and the guide has failed at its job. Use `files` overrides and `significance: "skip"` to spend attention where it matters.
 - **Anchor coarsely.** Ranges intersect groups, so pointing at the enclosing function is enough and is more robust across rebases than exact line numbers.

@@ -81,7 +81,7 @@ The order of those rules is the product decision: we would rather have a coarse 
 
 ## 4. Output: a `.guide.json` v1 document
 
-The model is asked for a JSON document matching the v1 schema, with the same pedagogical rules the agent skill carries — position-not-content rationales, 8–25 steps, at most three `critical`, no exam language.
+The model is asked for a JSON document matching the v1 schema, with the same pedagogical rules the agent skill carries — plain why-look-now rationales, 8–25 steps, at most three `critical`, no exam language.
 
 Then we do not trust it:
 

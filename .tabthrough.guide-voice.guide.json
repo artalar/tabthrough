@@ -1,0 +1,128 @@
+{
+  "$schema": "https://raw.githubusercontent.com/artalar/tabthrough/main/schema/guide-v1.json",
+  "version": 1,
+  "topic": "guide-voice",
+  "scope": { "kind": "workingTree" },
+  "summary": "Guide words now start from what a person would notice, then the part on screen, then the name. The skill states the real sidebar first, then the recipe; the prompts and the examples agents copy follow.",
+  "files": {
+    ".agents/skills/tabthrough/SKILL.md": { "significance": "skip", "rationale": "Byte-identical copy of the canonical skill" },
+    ".cursor/skills/tabthrough/SKILL.md": { "significance": "skip", "rationale": "Byte-identical copy of the canonical skill" },
+    "README.md": { "significance": "skip", "rationale": "Three example rationales restated in the same voice" },
+    "work-docs/architecture/guide-schema.md": { "significance": "skip", "rationale": "Field table and one example note, synced to the skill" },
+    "work-docs/guides/agent-guide-authoring.md": { "significance": "skip", "rationale": "Explains the skill Words section; not a second contract" },
+    "work-docs/guides/llm-guide-generation.md": { "significance": "skip", "rationale": "One phrase, same meaning" },
+    "work-docs/guides/anatomy-skill-rewrite-plan.md": { "significance": "skip", "rationale": "The plan this walk already followed" },
+    ".tabthrough.guide-voice.guide.json": { "significance": "skip", "rationale": "This walk, written into the tree it describes" }
+  },
+  "steps": [
+    {
+      "id": "sidebar-surface",
+      "order": 10,
+      "path": "res/skill/tabthrough/SKILL.md",
+      "ranges": [{ "start": 18, "end": 43 }],
+      "significance": "critical",
+      "title": "Notes lead; Up next is the rationale",
+      "rationale": "The surface writers must match; the next step fills the words",
+      "notes": "Notes sit first under the title, unlabeled, and only the first 480 characters show. The rationale is read again as Up next before that step's code is on screen, so it has to make sense without identifiers and without pointing at the highlight."
+    },
+    {
+      "id": "translation-recipe",
+      "order": 20,
+      "path": "res/skill/tabthrough/SKILL.md",
+      "ranges": [{ "start": 45, "end": 92 }],
+      "significance": "critical",
+      "title": "Translate in three moves",
+      "rationale": "The writing contract the prompts and examples will follow",
+      "notes": "Names coined while coding are unknown until they appear on screen. First say what changes for a person, then the part on screen and its job, then the identifier only if they will search for it.",
+      "dependsOn": ["sidebar-surface"]
+    },
+    {
+      "id": "worked-example",
+      "order": 30,
+      "path": "res/skill/tabthrough/SKILL.md",
+      "ranges": [{ "start": 136, "end": 193 }],
+      "significance": "high",
+      "title": "The worked example in the new voice",
+      "rationale": "The first thing every agent copies; same structure, new words",
+      "dependsOn": ["translation-recipe"]
+    },
+    {
+      "id": "skill-gates",
+      "order": 40,
+      "path": "res/skill/tabthrough/SKILL.md",
+      "significance": "low",
+      "title": "Cheatsheet and the words gate",
+      "rationale": "The same rules, restated where an agent checks before emitting",
+      "dependsOn": ["worked-example"]
+    },
+    {
+      "id": "command-body",
+      "order": 50,
+      "path": "src/model/setup.ts",
+      "ranges": [{ "start": 106, "end": 111 }],
+      "significance": "high",
+      "title": "The slash-command carries the recipe",
+      "rationale": "Where Setup writes the workspace command from",
+      "dependsOn": ["translation-recipe"]
+    },
+    {
+      "id": "agent-prompt",
+      "order": 60,
+      "path": "src/model/setup.ts",
+      "ranges": [{ "start": 722, "end": 725 }],
+      "significance": "high",
+      "title": "Generate prompt keeps the pinned phrases",
+      "rationale": "The same contract, in the Agent chat prompt",
+      "notes": "This prompt is what Generate pastes into chat. It keeps the short phrases the tests already check, and adds the reader, what a user would notice, and the Up next preview.",
+      "dependsOn": ["command-body"]
+    },
+    {
+      "id": "prompt-tests",
+      "order": 70,
+      "path": "test/unit/serialize.test.ts",
+      "ranges": [{ "start": 177, "end": 179 }],
+      "significance": "low",
+      "title": "Prompt tests pin the new phrases",
+      "rationale": "The check that the Generate prompt kept the new lines",
+      "dependsOn": ["agent-prompt"]
+    },
+    {
+      "id": "session-idle-git",
+      "order": 80,
+      "path": ".tabthrough.session-idle-git.guide.json",
+      "significance": "high",
+      "title": "The quoted failures, rewritten",
+      "rationale": "The golden that held the skill's before and after pairs",
+      "notes": "These were the notes the skill now quotes as too abstract. Finish warns when a stash is left behind; the home screen stops reading git during a review. The structure is unchanged.",
+      "dependsOn": ["translation-recipe"]
+    },
+    {
+      "id": "helper-consumer",
+      "order": 90,
+      "path": "test/fixtures/guides/helper-consumer.guide.json",
+      "significance": "normal",
+      "title": "The helper sample uses the new words",
+      "rationale": "The sample the authoring guide links as correct",
+      "dependsOn": ["session-idle-git"]
+    },
+    {
+      "id": "idle-home-rationales",
+      "order": 100,
+      "path": ".tabthrough.idle-home.guide.json",
+      "ranges": [{ "start": 64, "end": 64 }, { "start": 76, "end": 76 }, { "start": 119, "end": 119 }],
+      "significance": "normal",
+      "title": "Three idle-home rationales drop shop talk",
+      "rationale": "The same recipe, applied to three neighbouring lines",
+      "dependsOn": ["helper-consumer"]
+    },
+    {
+      "id": "golden-words",
+      "order": 110,
+      "path": "test/unit/golden-words.test.ts",
+      "significance": "low",
+      "title": "A words lint for the goldens",
+      "rationale": "Checks the examples agents copy; not a product rule",
+      "dependsOn": ["session-idle-git"]
+    }
+  ]
+}

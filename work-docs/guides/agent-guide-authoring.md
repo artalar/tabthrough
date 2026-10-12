@@ -1,5 +1,7 @@
 # Writing a guide an agent produced, for a human who has to own the code
 
+SKILL.md's Words section is canonical; this guide explains it.
+
 **Audience:** LLMs and coding agents that emit `.guide.json` alongside a change
 **Owner:** Product
 **Status:** Published (track E) — P0-G1 granularity bar
@@ -75,11 +77,13 @@ Going the other way is also possible: twelve steps that are each one line of a m
 
 **Use `ranges` whenever one file has more than one thought.** A whole-file claim (`path` + `rationale` only) is correct only when the whole file is one thought. Omitting ranges on a mixed file silently bundles every unclaimed group into one Tab — the flashy-panel failure mode.
 
-### 2.3 The rationale is about position, not content
+### 2.3 The rationale says why to look now
 
 This is the rule agents break most, so it gets the most words.
 
-The reader is looking at the code while they read your line. A rationale that describes the code is a caption on a photograph the reader is already holding. A rationale that describes *position* tells them something the picture cannot.
+The rationale is reused in **"Up next"** (before that step's code is visible) and in the status bar. It must make sense in all three places: under the notes, in the preview, and in the status bar. No identifiers, and no "above".
+
+The reader is looking at the code while they read your line. A rationale that describes the code is a caption on a photograph the reader is already holding. A rationale that says *why to look now* tells them something the picture cannot.
 
 | Restating the diff (useless) | Explaining position (useful) |
 |---|---|
@@ -92,20 +96,34 @@ The reader is looking at the code while they read your line. A rationale that de
 
 Notice what the right-hand column does: each line positions the step relative to *other steps*. "Every later change", "you just saw", "the previous step", "every change below". Position is inherently relational, and relational language is the tell that you got it right.
 
-There is one respectable exception. When the code is genuinely non-obvious — a subtle concurrency argument, a workaround for an upstream bug — the *why it is like that* belongs in `notes`, not `rationale`. Keep the one-liner about order; put the explanation in `notes`, which the sidebar shows right under it as plain text. Every sentence there is read on every visit to the step, so write notes only where the code cannot explain itself, and skip markdown — it is rendered literally.
+There is one respectable exception. When the code is genuinely non-obvious — a subtle concurrency argument, a workaround for an upstream bug — the *why it is like that* belongs in `notes`, not `rationale`. Keep the one-liner about why to look now; put the explanation in `notes`, which the sidebar shows first under the title as plain text. The first 480 characters are visible; the rest sit behind "Show full notes". Write notes only where a person would miss what changes, and skip markdown — it is rendered literally.
 
-The code is the figure. `title` + `rationale` is the caption. `notes` is the discussion — IEEE Software / Nature accessible prose, not conference-paper density and not whiteboard shorthand. Order is still *what would I draw first at a whiteboard*; the words are not.
+**Reader:** someone who uses the product and reads the language, but has never opened this module and was not in your session. Every name you coined or picked up while coding is unknown to them until it is on screen. That includes real identifiers.
 
-Write notes in two beats: consequence or invariant first (what stays true, or what breaks without this), then the name if needed — the plain explanation first, then the identifier in backticks. A sentence that only narrates visible lines ("sets", "adds", "updates", then a chain of internals) is a methods paragraph. Delete it.
+**Translate, in three moves:**
 
-State each claim in the affirmative. Do not open by denying the alternative ("It's not A, it's B", "not X but Y", "this is no longer X"). If the old behaviour matters, put it in a second sentence.
+1. **What a person would notice.** What changes for the user (before → after), or the guarantee that now holds, or what breaks without this.
+2. **The part on screen and its job.** "This check is the guard." "This loop is the only place requests are retried."
+3. **Then the name**, in backticks, only if the reader will search for it.
 
-| Telegram (useless beside a diff) | Journal discussion (useful) |
+Read every sentence aloud to a teammate who joined today. If they would ask "what's X?", translate X.
+
+**Two ways to fail.**
+
+- *Too abstract:* the words do not read as anything. Session nouns, identifiers in a row, "A sets B before C so D".
+- *Too flat:* there is nothing to discover. Restating the lines, repeating the title, or two thoughts in one panel.
+
+The cure for both: one recognisable thought, built from parts that each do a job, captioned with what stays true.
+
+**Affirmative claims.** State what is true now. Do not open by denying the alternative: "It's not A, it's B", "not X but Y", "this is no longer X". When the old behaviour matters, describe it as the other state of the same thing: "Finish used to close without a word; now it shows the warning."
+
+| Written | Rewritten |
 |---|---|
-| "A repo-scoped bump sets a flag before the 200ms abortable sleep, so a following index event still promotes HEAD." | "Without the wait, a save during a checkout refresh can leave the sidebar on the old branch. The checkout tick is recorded first so the wait cannot drop it." |
-| "Adds `isTransient()` returning false for 4xx in the retry helper." | "On the old code this test loops three times and passes by timeout. Client errors cannot succeed on repeat, so retrying them only hid rate-limit bugs behind slow attempts." |
+| notes: `Carriage-return progress keeps the last segment. A leftover stash still gets Applying autostash resulted in conflicts.` | `When a rebase finishes but git cannot put your stashed changes back, Finish now says so instead of closing silently. Git rewrites its progress line in place, so this reads only the last version of that line, the one a terminal would show.` |
+| notes: `Reading gitRemotes.data from a live computed keeps the async query connected. The empty home is the disconnect.` | `While a review is open, the home screen stops asking git for remotes and history. Before, those reads kept running for the whole walk. Returning an empty home here is what lets them stop.` |
+| notes: `A repo-scoped bump sets a flag before the 200ms abortable sleep, so a following index event still promotes HEAD.` | `Saving a file while a branch switch is still refreshing used to leave the sidebar on the old branch. The refresh now waits briefly and remembers the switch, so the sidebar ends on the branch you are on.` |
 
-Give every step a `title`. It is the sidebar headline and the "Next" preview; without it the reader sees the file path twice. A title names the thought in the reader's vocabulary — `Only stash@{0} counts`, `The bug, as a test` — not the file or the verb (`Update setup.ts`). Read the titles top to bottom and you should have the table of contents of the change.
+Give every step a `title`. It is the sidebar headline and the "Up next" preview; without it the reader sees the file path twice. A title names the thought in the words a user of the product would use — `Finish warns when your stash is left behind`, `A 404 must fail at once` — not the file or the verb (`Update setup.ts`). Read the titles top to bottom and you should have a table of contents a user would understand.
 
 ### 2.4 Spend attention like it is finite, because it is
 
@@ -248,7 +266,7 @@ Two telltales: the rationale needs "and", and a whole-file (or whole-hunk) claim
 ```json
 {
   "version": 1,
-  "summary": "Extract a shared action-name helper, then adopt it in jsxEvent. Two thoughts — do not read them as one flash.",
+  "summary": "Event call sites now share one rule for listener names. The rule comes first, then the first call site that uses it.",
   "steps": [
     {
       "id": "event-action-name",
@@ -256,9 +274,9 @@ Two telltales: the rationale needs "and", and a whole-file (or whole-hunk) claim
       "path": "src/jsx/events.ts",
       "ranges": [{ "side": "new", "start": 1, "end": 4 }],
       "significance": "high",
-      "title": "Named action helper",
-      "rationale": "The contract every later event call site will share",
-      "notes": "Call sites only make sense after you have the naming rule. Read the helper alone, or the refactor looks like noise."
+      "title": "One rule for event listener names",
+      "rationale": "The naming rule every event call site will share; read it on its own first",
+      "notes": "Every event binding turns an event type into a listener name the same way, for example click into onClick. Keeping that rule in one helper, `eventActionName`, stops call sites from drifting apart."
     },
     {
       "id": "jsx-event-adopts",
@@ -266,8 +284,8 @@ Two telltales: the rationale needs "and", and a whole-file (or whole-hunk) claim
       "path": "src/jsx/events.ts",
       "ranges": [{ "side": "new", "start": 8, "end": 14 }],
       "significance": "high",
-      "title": "jsxEvent adopts the helper",
-      "rationale": "First consumer — only makes sense after the helper above",
+      "title": "JSX events use the shared rule",
+      "rationale": "The first call site to switch to that rule",
       "dependsOn": ["event-action-name"]
     }
   ]
@@ -296,7 +314,21 @@ Every rationale restates its hunk, and the order is whatever the diff was in. Th
 
 Valid, and worth almost nothing. It stacks implementation tokens the reviewer can already see (`bump`, `flag`, `sleep`, `index event`, `HEAD`) and never says what breaks.
 
-**Fix:** lead with the human-visible outcome, then name the mechanism if needed. `"Without the wait, a save during a checkout refresh can leave the sidebar on the old branch. The checkout tick is recorded first so the wait cannot drop it."`
+**Fix:** what a person would notice, then the part on screen and its job. `"Saving a file while a branch switch is still refreshing used to leave the sidebar on the old branch. The refresh now waits briefly and remembers the switch, so the sidebar ends on the branch you are on."`
+
+Same fault, two more that agents wrote:
+
+```json
+{ "notes": "Carriage-return progress keeps the last segment. A leftover stash still gets Applying autostash resulted in conflicts." }
+```
+
+**Fix:** `"When a rebase finishes but git cannot put your stashed changes back, Finish now says so instead of closing silently. Git rewrites its progress line in place, so this reads only the last version of that line, the one a terminal would show."`
+
+```json
+{ "notes": "Reading gitRemotes.data from a live computed keeps the async query connected. The empty home is the disconnect." }
+```
+
+**Fix:** `"While a review is open, the home screen stops asking git for remotes and history. Before, those reads kept running for the whole walk. Returning an empty home here is what lets them stop."`
 
 ### The antithesis note
 
@@ -316,7 +348,7 @@ The correction ("not A, it's B") spends the sentence on what the step is *not*. 
 
 Over the 120-character limit, so it is rejected or truncated, and it was doing `notes`' job anyway.
 
-**Fix:** rationale is the one-line reason for position. `"The retry rule the rest of this change follows from"`. The reasoning goes in `notes`, shown under it in the sidebar.
+**Fix:** rationale is the one-line reason to look now. `"The one rule that decides whether a request is tried again"`. The reasoning goes in `notes`, shown first under the title in the sidebar.
 
 ### Everything is critical
 

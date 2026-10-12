@@ -23,51 +23,73 @@ Write for this surface. Nothing else exists.
 Editor    Diff: before ⟷ file-so-far. Only the current step's lines are highlighted
           and scrolled into view; lines from later steps are not on screen yet.
 Sidebar   k of n        ◀ Previous   Next ▶
-          Guide summary  ← summary (visible on every step)
-          TITLE          ← title (falls back to the path — a bad headline)
+          TITLE                 ← title (falls back to the path — a bad headline)
           path
-          Why here       ← rationale
-          Notes          ← notes, plain text (shown whenever present)
-          Next: title · rationale
+          notes                 ← plain text, unlabeled, first 480 chars; "Show full notes" for the rest
+          Why this comes here   ← rationale
+          Open real file
+          Up next               ← next title + next rationale, before its code is shown
+          ▸ Guide overview      ← summary, collapsed
 Status    k of n · file · rationale
 ```
 
 Consequences:
 
-- The reviewer is looking at the code. Never describe what the lines do; say what they **mean for the change** and **where they sit in the story**.
-- Anything about unrevealed code is noise. Nothing may refer to a later step.
-- `title` is the headline and the "Next" preview. Every step gets one.
-- `notes` are always shown, as plain text. Markdown shows as raw characters. Every sentence costs the reviewer time.
-- `summary` is always visible. It is a map the reviewer glances back at, not an introduction.
+- The reviewer is looking at the code. Do not describe what the lines do. Say what they **mean for a person** and **why to look now**.
+- When a step has `notes`, they are the first sentence read after the title. That sentence must stand on its own.
+- The `rationale` is read three times: under the notes, in "Up next" before its code is visible, and in the status bar. It must make sense in all three places, so it carries no identifiers and no "above".
+- `notes` are plain text; markdown shows as raw characters. Past 480 characters, the reader has to click.
+- `summary` is collapsed by default. Most reviewers read it only if they open it, so it gets one or two sentences.
 
-## Words: title, rationale, notes, summary
+## Words: title, notes, rationale, summary
 
-The code is the **figure**. `title` + `rationale` is the **caption**. `notes` is the **discussion**. Order is still *what would I draw first at a whiteboard*; the words are not whiteboard shorthand.
+The highlighted code is the object. Your words are its caption. Do not invent a second machine or a metaphor: name the thought, say why to look now, and say what stays true. The code shows how.
 
-Write for a competent teammate who was **not in the room**. Graduate literacy in the stack; zero session vocabulary.
+**Reader:** someone who uses the product and reads the language, but has never opened this module and was not in your session. Every name you coined or picked up while coding is unknown to them until it is on screen. That includes real identifiers.
 
-| Field | Job | Shape | Good | Bad |
+**Translate, in three moves:**
+
+1. **What a person would notice.** What changes for the user (before → after), or the guarantee that now holds, or what breaks without this.
+2. **The part on screen and its job.** "This check is the guard." "This loop is the only place requests are retried."
+3. **Then the name**, in backticks, only if the reader will search for it.
+
+Read every sentence aloud to a teammate who joined today. If they would ask "what's X?", translate X.
+
+| Field | Job | Recipe | Good | Bad — the fault that taught it |
 |---|---|---|---|---|
-| `title` ≤ 60 | Names the thought — the table-of-contents entry | Noun phrase or short claim in the reviewer's vocabulary | `Only stash@{0} counts` · `The bug, as a test` · `Range phase carries bounds` | `Update setup.ts` · `Changes` · `Fix` |
-| `rationale` ≤ 120 | Why this step is **here**: what the highlighted lines establish and how they link to neighbours | One sentence, relational: "the contract the next two steps fill", "first consumer of the field above" | `The failure the rest of the diff answers` · `Back in setup.ts now that the accent exists` | `Adds a null check` · `Updates the picker` |
-| `notes` ≤ 2000 | Discussion of the figure: invariant, trade-off, what would break, rejected alternative | 1–3 short sentences, plain text, blank line between points. Consequence first; then the name if needed | `Without the wait, a save during a checkout refresh can leave the sidebar on the old branch. The checkout tick is recorded first so the wait cannot drop it.` | `A repo-scoped bump sets a flag before the 200ms abortable sleep, so a following index event still promotes HEAD.` · Restating the diff · a paragraph on every step |
-| `summary` ≤ 600, aim ≤ 350 | The map: what the change does, the strands in walk order, what is demoted to the end | 2–3 sentences | `Leftover autostash moves under the actions. The range flow reuses the commit list; two clicks become start and end. Tests are low at the end.` | A bullet list of everything you did |
+| `title` ≤ 60 | Names the thought, in the words a user of the product would use | Short claim or noun phrase. An identifier only when the thought *is* that name | `Finish warns when your stash is left behind` · `Home stops reading git during a review` · `Review defaults to asking the agent` | `Leftover stash keeps the autostash sentence` (session name) · `Range phase carries bounds` (internal noun) · `Update setup.ts` |
+| `notes` ≤ 2000, aim ≤ 480 | Shown first. What a person would notice, what stays true, or what breaks without it | `[What changes / what stays true]. [Part on screen] is [its job]. [Name, if needed.]` 1–3 sentences, blank line between points | `Working changes are selected only when the listed branch is the dirty checkout. Viewing another ref while main is dirty leaves the selection empty, so Review does not walk local work in progress.` | `Reading gitRemotes.data from a live computed keeps the async query connected.` (too abstract: a mechanism chain) · `Carriage-return progress keeps the last segment.` (true, but nobody knows why they should care) · restating the diff (too flat) |
+| `rationale` ≤ 120 | Why look at this now. Also the "Up next" preview and the status bar | `[What this step gives the reader][, plain link to the step before or after].` One sentence, no identifiers, no "above" | `Where the warning text comes from; the next step shows it to the user` · `The failure this change fixes, written as a test` | `First consumer — silent close, then the leftoverFinishNotice warn` (shop talk plus two thoughts) · `Last-in-win after 80ms` (telegram) · `Adds a null check` (restates the diff) |
+| `summary` ≤ 600, aim ≤ 300 | Collapsed overview: the outcome in one glance | Sentence 1: what changes for a person. Sentence 2: the walk order in plain strands, and what is skipped | `Finish now warns when a rebase leaves your stash behind, and the home screen stops reading git while a review is open. The warning comes first, then the home change; formatting-only test edits are skipped.` | `Leftover autostash moves under the actions. Range phase carries bounds.` · a bullet list of everything you did |
 
-**Notes in two beats.** (1) Consequence or invariant first — what stays true, or what breaks without this. (2) Then the name, if needed: the plain explanation first, then the identifier in backticks. A sentence that only narrates visible lines ("sets", "adds", "updates", then a chain of internals) is a methods paragraph. Delete it.
+**Two ways to fail.**
 
-**Affirmative claims.** State what is true. Do not open by denying the alternative: "It's not A, it's B", "not X but Y", "this is no longer X". If the old behaviour matters, a second sentence may say what used to happen — the first sentence is the present claim.
+- *Too abstract:* the words do not read as anything. Session nouns, identifiers in a row, "A sets B before C so D".
+- *Too flat:* there is nothing to discover. Restating the lines, repeating the title, or two thoughts in one panel.
 
-**Speed is title + rationale in three seconds.** Spend words by significance:
+The cure for both: one recognisable thought, built from parts that each do a job, captioned with what stays true.
+
+**Affirmative claims.** State what is true now. Do not open by denying the alternative: "It's not A, it's B", "not X but Y", "this is no longer X". When the old behaviour matters, describe it as the other state of the same thing: "Finish used to close without a word; now it shows the warning."
+
+**Rewrites from real guides.** Keep these pairs in mind; agents produced the left column while following an earlier version of this skill.
+
+| Written | Rewritten |
+|---|---|
+| notes: `Carriage-return progress keeps the last segment. A leftover stash still gets Applying autostash resulted in conflicts.` | `When a rebase finishes but git cannot put your stashed changes back, Finish now says so instead of closing silently. Git rewrites its progress line in place, so this reads only the last version of that line, the one a terminal would show.` |
+| notes: `Reading gitRemotes.data from a live computed keeps the async query connected. The empty home is the disconnect.` | `While a review is open, the home screen stops asking git for remotes and history. Before, those reads kept running for the whole walk. Returning an empty home here is what lets them stop.` |
+| notes: `A repo-scoped bump sets a flag before the 200ms abortable sleep, so a following index event still promotes HEAD.` | `Saving a file while a branch switch is still refreshing used to leave the sidebar on the old branch. The refresh now waits briefly and remembers the switch, so the sidebar ends on the branch you are on.` |
+
+**Speed is title plus first sentence in three seconds.** Spend words by significance:
 
 | Significance | Words | When |
 |---|---|---|
 | `critical` (≤ 3) | title + rationale + notes | The one or two steps that make the rest legible |
-| `high` | title + rationale, notes if non-obvious | Contracts, first consumers, the fix |
+| `high` | title + rationale, notes if a person would miss what changes | Contracts, first users of a new rule, the fix |
 | `normal` | title + rationale | Everything the reviewer should still look at |
-| `low` | title + short rationale; may bundle mechanical rest | Fallout, remaining call sites, docs |
-| `skip` via `files` | rationale that says **why** it can be skipped | Lockfiles, generated, snapshots, formatting |
+| `low` | title + short rationale; may bundle the mechanical rest | Fallout, remaining call sites, docs |
+| `skip` via `files` | a rationale that says **why** it can be skipped, in plain words | Lockfiles, generated files, snapshots, formatting |
 
-Voice: load-bearing journal prose — active, calm, precise. IEEE Software / Nature accessible, not conference-paper density, not telegram. Occasionally opinionated about your own code. Never testing the reader. Never pompous.
+Voice: calm, precise, active prose for a colleague. Occasionally opinionated about your own code. Never testing the reader. Never telegram. Never pompous.
 
 ## Procedure (gates — do not skip)
 
@@ -112,16 +134,16 @@ Canonical anti-pattern: a helper and its consumer in one panel. Two thoughts →
 
 ## Worked example
 
-Bug fix: retries treated 4xx as transient. The test leads (the heuristic would sort it last), the rule follows, then its consumer; docs are a footnote.
+Bug fix: retries treated client errors like 404 as worth retrying. The test leads (the heuristic would sort it last), the rule follows, then the one loop that uses it; docs are a footnote.
 
 ```json
 {
   "$schema": "https://raw.githubusercontent.com/artalar/tabthrough/main/schema/guide-v1.json",
   "version": 1,
   "scope": { "kind": "commit", "base": "9f2c1ab", "head": "4d81e30" },
-  "summary": "Retries stop treating 4xx as transient. The failing case first, then the rule, then the client loop that adopts it. Lockfile churn is skipped.",
+  "summary": "A request that fails with a client error such as 404 or 429 now fails at once instead of retrying three times. The walk shows the failing case, the rule, then the loop that uses it; lockfile churn is skipped.",
   "files": {
-    "pnpm-lock.yaml": { "significance": "skip", "rationale": "Lockfile churn from the same install" }
+    "pnpm-lock.yaml": { "significance": "skip", "rationale": "Lockfile churn from the same install; nothing to read" }
   },
   "steps": [
     {
@@ -130,9 +152,9 @@ Bug fix: retries treated 4xx as transient. The test leads (the heuristic would s
       "path": "test/http/retry.test.ts",
       "ranges": [{ "start": 41, "end": 58 }],
       "significance": "critical",
-      "title": "429 then 404 must not retry",
-      "rationale": "The failure the rest of the diff answers — read it before the fix",
-      "notes": "On the old code this test loops three times and passes by timeout. Client errors cannot succeed on repeat, so retrying them only hid rate-limit bugs behind slow attempts."
+      "title": "A 404 must fail at once",
+      "rationale": "The failure this change fixes, written as a test; read it before the fix",
+      "notes": "On the old code a 404 or a rate-limit answer was retried three times before the caller saw it. Asking again cannot change those answers, so the retries only made real failures slower to notice."
     },
     {
       "id": "retry-rule",
@@ -140,8 +162,8 @@ Bug fix: retries treated 4xx as transient. The test leads (the heuristic would s
       "path": "src/http/retry.ts",
       "ranges": [{ "start": 12, "end": 24 }],
       "significance": "high",
-      "title": "Transient means 5xx or network",
-      "rationale": "The single rule every caller below consults",
+      "title": "Only server errors and lost connections retry",
+      "rationale": "The one rule that decides whether a request is tried again",
       "dependsOn": ["the-bug"]
     },
     {
@@ -150,8 +172,9 @@ Bug fix: retries treated 4xx as transient. The test leads (the heuristic would s
       "path": "src/http/client.ts",
       "ranges": [{ "start": 88, "end": 101 }],
       "significance": "high",
-      "title": "Retry loop asks the rule",
-      "rationale": "First consumer — the loop that used to retry everything",
+      "title": "The request loop asks the rule",
+      "rationale": "The loop that used to retry every failure now checks the rule first",
+      "notes": "This loop is the only place requests are retried, so every caller of the client gets the new behaviour.",
       "dependsOn": ["retry-rule"]
     },
     {
@@ -159,27 +182,27 @@ Bug fix: retries treated 4xx as transient. The test leads (the heuristic would s
       "order": 40,
       "path": "README.md",
       "significance": "low",
-      "title": "Retry note in the docs",
-      "rationale": "Footnote — the behaviour you just read, stated for users"
+      "title": "Retry behaviour in the README",
+      "rationale": "The same rule, stated for people who use the client"
     }
   ]
 }
 ```
 
-Read the titles top to bottom: a table of contents. Read the rationales: a story. One `critical`, notes only where the code could not explain itself.
+Read the titles top to bottom: a table of contents a user would understand. Read the rationales: a story that still makes sense in "Up next". Read the notes: what changes for a person, then the part that does it. Nothing in the words needs the session to decode.
 
 ## Field cheatsheet
 
 | Field | Notes |
 |---|---|
 | `version` | Must be `1`. Anything else → whole document ignored |
-| `summary` | ≤ 600 chars, aim ≤ 350. Always visible |
+| `summary` | ≤ 600 chars, aim ≤ 300. Collapsed "Guide overview"; outcome first |
 | `files` | path → `{ significance, rationale }`. Lockfiles, generated, snapshots → `"skip"` |
 | `steps[].id` | Unique, `^[A-Za-z0-9._:-]{1,64}$` |
 | `steps[].path` | Repo-relative POSIX, post-image. Must exist in the patch |
-| `steps[].title` | ≤ 60 chars. Names the thought. Every step |
-| `steps[].rationale` | Required, ≤ 120 chars, one line, about **position** |
-| `steps[].notes` | ≤ 2000 chars, plain text, only where needed |
+| `steps[].title` | ≤ 60 chars. Names the thought in the product's words. Every step |
+| `steps[].rationale` | Required, ≤ 120 chars, one plain sentence: why look now. Also the "Up next" preview and status bar, so no identifiers |
+| `steps[].notes` | ≤ 2000 chars, aim ≤ 480 (the visible preview). Plain text, shown first under the title, only where a person would miss what changes |
 | `steps[].order` | Sparse: 10, 20, 30 |
 | `steps[].ranges` | New-file line numbers (not hunk offsets). Intersect changed lines; coarse is fine; a contiguous run cannot be split. `"side": "old"` for pure deletions. **Required when one file has multiple thoughts** |
 | `steps[].significance` | `critical` / `high` / `normal` / `low` / `skip` |
@@ -208,12 +231,13 @@ Read the titles top to bottom: a table of contents. Read the rationales: a story
 - **No exam.** No questions, "make sure you understand", scores, difficulty, reading-time, or gates.
 - **No restating the diff.** The reviewer sees the code.
 - **No telegram notes.** No stacked implementation tokens without a human-visible outcome.
+- **No session vocabulary.** A name you coined or learned while coding (`leftoverFinishNotice`, "range phase", "last-in-win") is not a word the reader knows. Translate it into what it does for a person; add the identifier after, in backticks, only if they will search for it.
 - **No antithesis.** No "It's not A, it's B", "not X but Y", or a title that is a denial plus a correction.
 - **No multi-thought panels.** Helper + consumer in one step is the named defect.
-- **No forward references.** Nothing mentions a symbol or step not yet revealed.
+- **No forward references.** You may say a later step exists ("the next step shows it"). You may not name or explain a symbol the reader has not seen yet.
 - **No markdown in `notes`.** Plain sentences; backticks around identifiers only.
 - **No steps for files not in the patch.**
-- **No secrets, tokens, absolute paths, or session-private codenames.**
+- **No secrets, tokens, or absolute paths.**
 
 ## Before you emit
 
@@ -223,12 +247,13 @@ Read the titles top to bottom: a table of contents. Read the rationales: a story
 
 **Words gate**
 
-- Titles read top to bottom as a table of contents; rationales read as a story.
-- Every rationale is about position and would be false if the step moved.
-- No rationale or note mentions something a later step introduces.
-- Notes only where the code cannot explain itself; plain text; consequence or invariant first.
-- A teammate who was not in the room can read every note. No mechanism chains. No antithesis ("It's not A, it's B").
-- `summary` names the strands in walk order and what is demoted.
+- Titles read top to bottom as a table of contents a user of the product would understand.
+- Every rationale makes sense on its own in "Up next", before its code is shown: no identifiers, no "above".
+- Every note's first sentence says what a person would notice, or what stays true. The identifier, if any, comes after.
+- Read each sentence aloud to a teammate who joined today. Anything they would ask "what's X?" about is translated.
+- No mechanism chains (too abstract). No restating the lines or repeating the title (too flat). No antithesis.
+- Notes fit the 480-character preview unless the step is `critical`.
+- `summary` leads with the outcome for a person, then names the walk order and what is skipped.
 
 **Granularity gate**
 
@@ -243,4 +268,4 @@ Read the titles top to bottom: a table of contents. Read the rationales: a story
 - Ids unique; `order` sparse; `dependsOn` acyclic and pointing backwards.
 - Only schema fields; valid JSON; working-tree scope has no `diffDigest`.
 
-**Real test:** could someone who read only this guide explain the change correctly without scrolling the diff — **one thought per Tab**?
+**Real test:** could someone who uses the product, but never opened this code, read only the titles and first sentences and explain the change correctly — one thought per Tab?

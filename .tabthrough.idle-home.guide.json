@@ -61,7 +61,7 @@
       "ranges": [{ "start": 171, "end": 204 }],
       "significance": "critical",
       "title": "History follows the listed branch",
-      "rationale": "First consumer of log-rev — and the rule that keeps WIP off a remote ref",
+      "rationale": "The history list now follows the branch you picked",
       "dependsOn": ["log-rev", "home-phase"],
       "notes": "Working changes are selected only when the listed branch is the dirty checkout. Viewing another ref while main is dirty leaves selection empty so Review does not walk local WIP."
     },
@@ -73,7 +73,7 @@
       "grouping": "split",
       "significance": "critical",
       "title": "Clicks become the review target",
-      "rationale": "The machine the header button will start — still on home, no generate wizard",
+      "rationale": "How a click here becomes the review the next step starts",
       "dependsOn": ["home-history-wip"],
       "notes": "A second commit click is a range, older from and newer to, same as the leftover range picker. With nothing picked, a non-default branch walks as default-base to that branch. Working changes stay on home."
     },
@@ -116,7 +116,7 @@
       "ranges": [{ "start": 73, "end": 94 }],
       "significance": "high",
       "title": "Review starts the walk",
-      "rationale": "The click that leaves idle — pendingEntry then startSession, no sidecar required",
+      "rationale": "The click that starts the walk from the pick you just made",
       "dependsOn": ["home-clicks"]
     },
     {

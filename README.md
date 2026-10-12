@@ -14,9 +14,9 @@ Understand a code change one Tab at a time. Tabthrough is a guided diff reader f
   "version": 1,
   "topic": "order-type",
   "steps": [
-    { "id": "order", "path": "src/order.ts", "title": "An order has named fields", "rationale": "The contract before its consumers" },
-    { "id": "pricing", "path": "src/pricing.ts", "title": "Pricing consumes the contract", "rationale": "Behavior before the last caller" },
-    { "id": "checkout", "path": "src/checkout.ts", "title": "Checkout names its inputs", "rationale": "The caller after the type and the math" }
+    { "id": "order", "path": "src/order.ts", "title": "An order has named fields", "rationale": "The shape of an order, which the next two files use" },
+    { "id": "pricing", "path": "src/pricing.ts", "title": "Pricing consumes the contract", "rationale": "How the price is worked out from that order" },
+    { "id": "checkout", "path": "src/checkout.ts", "title": "Checkout names its inputs", "rationale": "Checkout, the last place that builds an order" }
   ]
 }
 ```
